@@ -13,7 +13,6 @@ def _parse_args():
 tmpl = '''<database>
   <name>Physiome Model Repository</name>
   <description>The main goal of the Physiome Model Repository is to provide a resource for the community to store, retrieve, search, reference, and reuse models.</description>
-  <contact>help@physiomeproject.org</contact>
   <release>13</release>
   <release_date>2024-11-21</release_date>
   <entry_count>{entry_count}</entry_count>
@@ -112,8 +111,8 @@ if __name__ == "__main__":
     entries = []
     for w in cache:
         id = w['id']
-        name = w['title']
-        description = w['description']
+        name = str(w['title'] or '').replace('&', '&amp;')
+        description = str(w['description'] or '').replace('&', '&amp;')
         url = w['href']
         citations = []
         if 'latest-exposure' in w.keys():
