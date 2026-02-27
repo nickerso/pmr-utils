@@ -55,13 +55,15 @@ entry_tmpl = '''
     <entry id="{entry_id}">
         <name>{entry_name}</name>
         <description>{entry_description}</description>
+        <cross_references>
+            <ref dbname="pubmed" dbkey="{entry_publication}"/>
+        </cross_references>
         <additional_fields>
             <field name="submitter">David Nickerson</field>
             <field name="submitter_mail">d.nickerson@auckland.ac.nz</field>
             <field name="repository">PMR</field>
             <field name="full_dataset_link">{entry_url}</field>
             <field name="omics_type">Models</field>
-            <field name="publication">{entry_publication}</field>
         </additional_fields>    
     </entry>
 '''
@@ -131,10 +133,10 @@ if __name__ == "__main__":
                 pubs.append(c)
         publications = ' ; '.join(pubs)
         entries.append(entry_tmpl.format(
-            entry_id=id or '',
+            entry_id=id,
             entry_url=url or '',
-            entry_name=name or '',
-            entry_description=description or '',
+            entry_name=name or id,
+            entry_description=description or f'Exposure with the id: {id}',
             entry_publication=publications or ''
         ))
 

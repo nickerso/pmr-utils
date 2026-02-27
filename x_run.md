@@ -1,3 +1,10 @@
+In an ubuntu console...
+
+```console
+$ xmllint --noout --schema XML4dbDumps.xsd pmr-mx-2024-11-21.xml
+```
+
+
 ```console
 $ python pmr_mx_fmt.py https://models.physiomeproject.org/e/
 <database>
