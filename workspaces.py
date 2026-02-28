@@ -5,7 +5,7 @@ import pathlib
 from urllib.request import Request, urlopen
 from urllib.parse import urlparse
 from git import Repo
-
+from pmr_cache import PMRCache, Workspace
 
 PMR_INSTANCES = {
     'models': 'https://models.physiomeproject.org/',
@@ -77,7 +77,7 @@ def get_workspace_list(instance, regex, workspace, all):
         workspace_list.append(workspace)
     elif regex or all:
         # fetch workspaces from the requested instance
-        workspace_root = instance + "workspace"
+        workspace_root = instance + "/workspace"
         data = _request_json(workspace_root)
         collection_links = data['collection']['links']
         entry_count = len(collection_links)
@@ -125,7 +125,7 @@ def list_link(link, follow=None):
 
 
 def list_exposure(exposure_url):
-    print(f'Exposure: {exposure_url}')
+    # print(f'Exposure: {exposure_url}')
     exposure = {
         'href': exposure_url
     }
@@ -141,7 +141,7 @@ def list_exposure(exposure_url):
     return exposure
 
 
-def list_workspace(workspace_url):
+def create_workspace(workspace_url) -> Workspace:
     print(f"Workspace: {workspace_url}")
     url = workspace_url + "/workspace_view"
     data = _request_json(url)
@@ -160,7 +160,15 @@ def list_workspace(workspace_url):
                 workspace['latest-exposure'] = list_exposure(link['href'])
             else:
                 print(f'[list_workspace] Unknown link found and ignored: {link['prompt']}')
-    return workspace
+
+    return Workspace(
+        href=workspace['href'],
+        id=workspace['id'],
+        title=workspace['title'],
+        owner=workspace['owner'],
+        description=workspace.get('description', ''),
+        latest_exposure=workspace.get('latest-exposure', {})
+    )
 
 
 def update_workspaces(workspaces, cache_root):
@@ -174,6 +182,27 @@ def update_workspaces(workspaces, cache_root):
         else:
             repo = Repo.clone_from(w, workspace_cache)
 
+
+def cache_workspace_information(cache: PMRCache, regex, workspace, all, force_refresh) -> int:
+    print(f'Cache workspace information using cache: {cache}')
+
+    workspaces = get_workspace_list(cache.pmr_instance, regex, workspace, all)
+    if len(workspaces) > 0:
+        print(f'Found {len(workspaces)} workspace(s) to cache information for.')
+        for w in workspaces:
+            workspace = cache.get_workspace(w)
+            if (workspace and not force_refresh):
+                # print(f'Workspace {w} already cached and refresh not forced, skipping.')
+                continue
+            else:
+                # print(f'Workspace {w} not cached or refresh forced.')
+                workspace = create_workspace(w)
+                cache.upsert_workspace(workspace)
+    else:
+        print(f'No requested workspaces found, perhaps you are looking for a workspace that is not public?')
+        return -1
+    
+    return 0
 
 def check_cache(instance, root):
     print(f"Updating the local cache: {root}")

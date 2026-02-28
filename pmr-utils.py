@@ -22,7 +22,8 @@ import sys
 import tomllib  # Python 3.11+; use `pip install tomli` and `import tomli as tomllib` for older versions
 from pathlib import Path
 from typing import Any
-
+from pmr_cache import PMRCache, InstanceMismatchError, CacheNotInitialisedError
+from workspaces import cache_workspace_information
 
 # ==============================================================================
 # Global Defaults
@@ -95,6 +96,22 @@ def resolve_global_config(cli_args: argparse.Namespace, file_config: dict) -> di
 # Command Implementations
 # ==============================================================================
 
+def cmd_cache_workspace_information(args: argparse.Namespace, config: dict[str, Any]) -> int:
+    """Populate the workspace cache information."""
+
+    try:
+        cache = PMRCache(config["cache_dir"], config["pmr_instance"])
+    except InstanceMismatchError as e:
+        print(f"Error: instance mismatch - {e}")
+        return 1
+    except CacheNotInitialisedError as e:
+        print(f"Error: cache not initialised - {e}")
+        return 1
+    
+    return cache_workspace_information(cache, regex=args.regex, workspace=args.workspace, all=args.all, 
+                                       force_refresh=args.force_refresh)
+
+
 def cmd_greet(args: argparse.Namespace, config: dict[str, Any]) -> int:
     """Say hello to someone, optionally loudly."""
     print(f"[PMR]        {config['pmr_instance']}")
@@ -135,6 +152,29 @@ def cmd_status(args: argparse.Namespace, config: dict[str, Any]) -> int:
 # ==============================================================================
 # Subcommand Argument Definitions
 # ==============================================================================
+def _args_cache_workspace_information(p: argparse.ArgumentParser):
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        "--regex",
+        help='Specify a regex to determine matching workspaces to cache information for'
+    )
+    group.add_argument(
+        "--workspace",
+        help='Specify a single workspace to cache information for, rather than searching PMR'
+    )
+    group.add_argument(
+        "--all", 
+        action='store_true', 
+        default=False,
+        help='Cache information for all available (public) workspaces in PMR'
+    )
+    p.add_argument(
+        "--force-refresh",
+        action='store_true',
+        default=False,
+        help='Force refresh of cached information even if it already exists'
+    )
+
 
 def _args_greet(p: argparse.ArgumentParser):
     p.add_argument(
@@ -193,6 +233,12 @@ def _args_status(p: argparse.ArgumentParser):
 
 
 COMMANDS = {
+    "cache-workspace": {
+        "func": cmd_cache_workspace_information,
+        "help": "Cache workspace information",
+        "description": "Cache information for one or more workspaces.",
+        "add_args": _args_cache_workspace_information,
+    },
     "greet": {
         "func": cmd_greet,
         "help": "Greet a person by name",
@@ -357,9 +403,6 @@ def main() -> int:
 
     # Resolve global configuration from all sources
     config = resolve_global_config(args, file_config)
-
-    # Ensure cache directory exists
-    Path(config["cache_dir"]).mkdir(parents=True, exist_ok=True)
 
     return COMMANDS[args.command]["func"](args, config)
 
