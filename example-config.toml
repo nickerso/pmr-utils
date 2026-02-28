@@ -1,0 +1,53 @@
+# pmr-utils config file
+# Use with: pmr-utils.py --config this-file.toml
+#
+# Priority order for global settings (highest to lowest):
+#   command-line flags > this file > env vars (PMR_URL, PMR_OUTPUT_DIR) > built-in defaults
+#
+# Tip: commit a copy of this file to git to record and reproduce specific runs.
+
+# ---------------------------------------------------------------------------
+# [global] — shared settings that apply to every command
+# ---------------------------------------------------------------------------
+[global]
+pmr_instance    = "https://my-pmr-instance.example.com"
+cache_dir = "./pmr-output"
+
+# ---------------------------------------------------------------------------
+# [run] — optional: record a specific command execution for reproducibility
+#
+# Running `pmr-utils.py --config this-file.toml` will execute the command
+# below exactly as if you had typed it on the command line.
+# You can still override individual args by passing them on the CLI.
+#
+# Example CLI override:
+#   pmr-utils.py --config this-file.toml --pmr-instance https://other-instance.com
+# ---------------------------------------------------------------------------
+[run]
+command = "greet"
+
+[run.args]
+args   = "Alice"
+shout  = true
+repeat = 3
+
+# ---------------------------------------------------------------------------
+# Other example [run] blocks (only one [run] section is active at a time;
+# comment/uncomment as needed, or maintain separate files per run).
+# ---------------------------------------------------------------------------
+
+# [run]
+# command = "process"
+#
+# [run.args]
+# args   = "/data/input/sample.txt"
+# output  = "/data/pmr-output/result.txt"
+# mode    = "safe"
+# dry_run = false
+
+# [run]
+# command = "status"
+#
+# [run.args]
+# targets = ["model-a", "model-b"]
+# verbose = true
