@@ -7,6 +7,16 @@ from urllib.parse import urlparse
 from git import Repo
 from pmr_cache import PMRCache, Workspace
 
+# ==============================================================================
+# Module-level logger
+# (each module in your project should do this — they all feed into the
+#  root "pmr" logger that gets configured once in main())
+# ==============================================================================
+
+import logging
+log = logging.getLogger("pmr.workspaces")
+
+
 PMR_INSTANCES = {
     'models': 'https://models.physiomeproject.org/',
     'teaching': 'https://teaching.physiomeproject.org/',
@@ -72,7 +82,7 @@ def get_workspace_list(instance, regex, workspace, all):
     if workspace:
         # user has given a single workspace to use, check its for this instance of PMR
         if not workspace.startswith(instance):
-            print(f'The requested workspace, {workspace}, is not from this instance of PMR ({instance}).')
+            log.error(f'The requested workspace, {workspace}, is not from this instance of PMR ({instance}).')
             return workspace_list
         workspace_list.append(workspace)
     elif regex or all:
@@ -81,12 +91,12 @@ def get_workspace_list(instance, regex, workspace, all):
         data = _request_json(workspace_root)
         collection_links = data['collection']['links']
         entry_count = len(collection_links)
-        print(f"Total number of workspaces retrieved: {entry_count}")
+        log.info(f"Total number of workspaces retrieved: {entry_count}")
         workspace_list = []
         for entry in collection_links:
             if (not regex) or re.match(regex, entry['href']):
                 workspace_list.append(entry['href'])
-        print(f"Retrieved {len(workspace_list)} workspace(s) from this PMR instance that match the regex: {regex}")
+        log.info(f"Retrieved {len(workspace_list)} workspace(s) from this PMR instance that match the regex: {regex}")
     return workspace_list
 
 
@@ -101,7 +111,7 @@ def list_link(link, follow=None):
     }
     if not ((rel in KNOWN_RELS) and (prompt in KNOWN_PROMPTS)):
         # maybe something we haven't seen before?
-        print(f'Link({rel}): {href}; {prompt}')
+        log.warning(f'Unknown link? Link({rel}): {href}; {prompt}')
     if follow and rel == follow and href.startswith("https://models.physiomeproject.org/"):
         data = _request_json(href)
         link_info = data['collection']['items'][0]
@@ -125,7 +135,7 @@ def list_link(link, follow=None):
 
 
 def list_exposure(exposure_url):
-    # print(f'Exposure: {exposure_url}')
+    log.debug(f'Exposure: {exposure_url}')
     exposure = {
         'href': exposure_url
     }
@@ -142,7 +152,7 @@ def list_exposure(exposure_url):
 
 
 def create_workspace(workspace_url) -> Workspace:
-    print(f"Workspace: {workspace_url}")
+    log.debug(f"Workspace: {workspace_url}")
     url = workspace_url + "/workspace_view"
     data = _request_json(url)
     workspace_info = data['collection']['items'][0]
@@ -159,7 +169,7 @@ def create_workspace(workspace_url) -> Workspace:
             if link['prompt'] == 'Latest Exposure':
                 workspace['latest-exposure'] = list_exposure(link['href'])
             else:
-                print(f'[list_workspace] Unknown link found and ignored: {link['prompt']}')
+                log.warning(f'[list_workspace] Unknown link found and ignored: {link["prompt"]}')
 
     return Workspace(
         href=workspace['href'],
@@ -184,22 +194,22 @@ def update_workspaces(workspaces, cache_root):
 
 
 def cache_workspace_information(cache: PMRCache, regex, workspace, all, force_refresh) -> int:
-    print(f'Cache workspace information using cache: {cache}')
+    log.debug(f'Cache workspace information using cache: {cache}')
 
     workspaces = get_workspace_list(cache.pmr_instance, regex, workspace, all)
     if len(workspaces) > 0:
-        print(f'Found {len(workspaces)} workspace(s) to cache information for.')
+        log.info(f'Found {len(workspaces)} workspace(s) to cache information for.')
         for w in workspaces:
             workspace = cache.get_workspace(w)
             if (workspace and not force_refresh):
-                # print(f'Workspace {w} already cached and refresh not forced, skipping.')
+                log.debug(f'Workspace {w} already cached and refresh not forced, skipping.')
                 continue
             else:
-                # print(f'Workspace {w} not cached or refresh forced.')
+                log.debug(f'Workspace {w} not cached or refresh forced.')
                 workspace = create_workspace(w)
                 cache.upsert_workspace(workspace)
     else:
-        print(f'No requested workspaces found, perhaps you are looking for a workspace that is not public?')
+        log.warning(f'No requested workspaces found, perhaps you are looking for a workspace that is not public?')
         return -1
     
     return 0

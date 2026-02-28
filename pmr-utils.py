@@ -14,9 +14,13 @@ Global options (--pmr-instance, --cache-dir) can be set via:
 
 Priority order (highest to lowest):
   command-line flags > config file > environment variables > built-in defaults
+
+Logging level env var: PMR_LOG_LEVEL  (DEBUG, INFO, WARNING, ERROR)
 """
 
 import argparse
+import logging
+import logging.handlers
 import os
 import sys
 import tomllib  # Python 3.11+; use `pip install tomli` and `import tomli as tomllib` for older versions
@@ -25,6 +29,16 @@ from typing import Any
 from pmr_cache import PMRCache, InstanceMismatchError, CacheNotInitialisedError
 from workspaces import cache_workspace_information
 
+
+# ==============================================================================
+# Module-level logger
+# (each module in your project should do this — they all feed into the
+#  root "pmr" logger that gets configured once in main())
+# ==============================================================================
+
+log = logging.getLogger("pmr.utils")
+
+
 # ==============================================================================
 # Global Defaults
 # ==============================================================================
@@ -32,7 +46,71 @@ from workspaces import cache_workspace_information
 GLOBAL_DEFAULTS = {
     "pmr_instance": "https://models.physiomeproject.org/",
     "cache_dir": "./pmr-cache",
+    "log_level": "INFO",       # DEBUG | INFO | WARNING | ERROR
+    "log_file": None,          # None → terminal only
+    "log_max_bytes": 10 * 1024 * 1024,  # 10 MB before rotation
+    "log_backup_count": 3,              # keep 3 rotated files
 }
+
+
+# ==============================================================================
+# Logging Setup
+# ==============================================================================
+
+# Two formatters: a compact one for the terminal, a detailed one for log files.
+_TERMINAL_FORMAT = "%(levelname)-8s %(message)s"
+_FILE_FORMAT     = "%(asctime)s  %(levelname)-8s  %(name)s  %(message)s"
+_DATE_FORMAT     = "%Y-%m-%d %H:%M:%S"
+
+
+def setup_logging(level: str, log_file: str | None, *, log_max_bytes: int, log_backup_count: int) -> None:
+    """
+    Configure the root 'pmr' logger.
+
+    Parameters
+    ----------
+    level : str
+        Log level name: DEBUG, INFO, WARNING, or ERROR.
+    log_file : str | None
+        Path to a log file. If None, output goes to stderr only.
+        Uses a RotatingFileHandler so logs don't grow unboundedly.
+    log_max_bytes : int
+        Maximum size of a single log file before it rotates.
+    log_backup_count : int
+        Number of rotated backup files to keep.
+    """
+    numeric_level = getattr(logging, level.upper(), None)
+    if not isinstance(numeric_level, int):
+        # Can't use log.error here — logging isn't configured yet
+        print(f"Warning: unknown log level '{level}', falling back to INFO.", file=sys.stderr)
+        numeric_level = logging.INFO
+
+    # Root logger for all 'pmr.*' loggers in this project
+    root = logging.getLogger("pmr")
+    root.setLevel(numeric_level)
+    root.handlers.clear()  # Avoid duplicate handlers if called more than once
+
+    # --- Terminal handler (always present) ---
+    terminal = logging.StreamHandler(sys.stderr)
+    terminal.setLevel(numeric_level)
+    terminal.setFormatter(logging.Formatter(_TERMINAL_FORMAT))
+    root.addHandler(terminal)
+
+    # --- File handler (optional) ---
+    if log_file:
+        log_path = Path(log_file)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.handlers.RotatingFileHandler(
+            log_path,
+            maxBytes=log_max_bytes,
+            backupCount=log_backup_count,
+            encoding="utf-8",
+        )
+        file_handler.setLevel(numeric_level)
+        file_handler.setFormatter(logging.Formatter(_FILE_FORMAT, datefmt=_DATE_FORMAT))
+        root.addHandler(file_handler)
+        # This log line will appear in the file but also on the terminal
+        logging.getLogger("pmr").info("Logging to file: %s", log_path.resolve())
 
 
 # ==============================================================================
@@ -46,6 +124,10 @@ def load_config_file(path: str) -> dict[str, Any]:
         [global]
         pmr_instance    = "https://my-pmr-instance.example.com"
         cache_dir = "/data/pmr-cache"
+        log_level        = "DEBUG"          # DEBUG | INFO | WARNING | ERROR
+        log_file         = "/var/log/pmr-utils.log"   # omit for terminal-only
+        log_max_bytes    = 10485760         # 10 MB (optional)
+        log_backup_count = 3               # (optional)
 
         # Optional: record a specific run for reproducibility / version control
         [run]
@@ -88,6 +170,24 @@ def resolve_global_config(cli_args: argparse.Namespace, file_config: dict) -> di
             or os.environ.get("PMR_CACHE_DIR")
             or GLOBAL_DEFAULTS["cache_dir"]
         ),
+        "log_level": (
+            cli_args.log_level                          # --log-level DEBUG
+            or file_global.get("log_level")
+            or os.environ.get("PMR_LOG_LEVEL")
+            or GLOBAL_DEFAULTS["log_level"]
+        ),
+        "log_file": (
+            cli_args.log_file                           # --log-file /path/to/file.log
+            or file_global.get("log_file")
+            or os.environ.get("PMR_LOG_FILE")
+            or GLOBAL_DEFAULTS["log_file"]
+        ),
+        "log_max_bytes": (
+            file_global.get("log_max_bytes") or GLOBAL_DEFAULTS["log_max_bytes"]
+        ),
+        "log_backup_count": (
+            file_global.get("log_backup_count") or GLOBAL_DEFAULTS["log_backup_count"]
+        ),
     }
     return resolved
 
@@ -114,13 +214,16 @@ def cmd_cache_workspace_information(args: argparse.Namespace, config: dict[str, 
 
 def cmd_greet(args: argparse.Namespace, config: dict[str, Any]) -> int:
     """Say hello to someone, optionally loudly."""
-    print(f"[PMR]        {config['pmr_instance']}")
-    print(f"[Cache dir] {config['cache_dir']}")
+    log.debug("cmd_greet called with args: %s", args)
+    log.info("Using PMR instance: %s", config["pmr_instance"])
+    log.info("Output directory:   %s", config["cache_dir"])
 
     greeting = f"Hello, {args.name}!"
     if args.shout:
+        log.debug("--shout flag set, converting to uppercase")
         greeting = greeting.upper()
     if args.repeat > 1:
+        log.debug("Repeating greeting %d times", args.repeat)
         greeting = " ".join([greeting] * args.repeat)
     print(greeting)
     return 0
@@ -128,24 +231,30 @@ def cmd_greet(args: argparse.Namespace, config: dict[str, Any]) -> int:
 
 def cmd_process(args: argparse.Namespace, config: dict[str, Any]) -> int:
     """Process a file with optional transformation."""
-    print(f"[PMR]        {config['pmr_instance']}")
-    print(f"[Cache dir] {config['cache_dir']}")
-    print(f"Processing file: {args.input}")
-    print(f"Output: {args.output or config['cache_dir']}")
-    print(f"Mode: {args.mode}")
+    log.debug("cmd_process called with args: %s", args)
+    log.info("Processing file: %s", args.input)
+    log.info("Output: %s", args.output or config["output_dir"])
+    log.info("Mode: %s", args.mode)
     if args.dry_run:
-        print("[DRY RUN] No changes written.")
+        log.warning("[DRY RUN] No changes written.")
     return 0
 
 
 def cmd_status(args: argparse.Namespace, config: dict[str, Any]) -> int:
     """Check the status of something."""
-    print(f"[PMR]        {config['pmr_instance']}")
-    print(f"[Cache dir] {config['cache_dir']}")
+    log.debug("cmd_status called with args: %s", args)
+    log.info("[PMR]        %s", config['pmr_instance'])
+    log.info("[Cache dir] %s", config['cache_dir'])
     targets = args.targets or ["all"]
-    print(f"Checking status of: {', '.join(targets)}")
+    log.info("Checking status of: %s", ', '.join(targets))
     if args.verbose:
-        print("  [verbose] Extra detail would appear here.")
+        log.info("  [verbose] Extra detail would appear here.")
+    
+    for target in targets:
+        # Simulated status check
+        log.debug("Querying target: %s", target)
+        log.info("  %s → OK", target)
+    
     return 0
 
 
@@ -302,6 +411,34 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"Local folder for output files (env: PMR_CACHE_DIR, default: {GLOBAL_DEFAULTS['cache_dir']})",
     )
 
+    # --- Logging options ---
+    log_group = parser.add_argument_group(
+        "logging options",
+        "Control log verbosity and destination. Can also be set via a config file or env vars.",
+    )
+    log_group.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        metavar="LEVEL",
+        help=(
+            "Log verbosity: DEBUG (most verbose) → INFO → WARNING → ERROR (least verbose). "
+            f"(env: PMR_LOG_LEVEL, default: {GLOBAL_DEFAULTS['log_level']})"
+        ),
+    )
+    log_group.add_argument(
+        "--log-file", metavar="FILE",
+        help=(
+            "Write logs to this file in addition to the terminal. "
+            "The file rotates automatically when it reaches 10 MB. "
+            "(env: PMR_LOG_FILE, default: terminal only)"
+        ),
+    )
+    log_group.add_argument(
+        "--debug",
+        action="store_true",
+        help="Shorthand for --log-level DEBUG",
+    )
+
     # --- Subcommands ---
     subparsers = parser.add_subparsers(
         dest="command",
@@ -403,6 +540,21 @@ def main() -> int:
 
     # Resolve global configuration from all sources
     config = resolve_global_config(args, file_config)
+
+    # --debug is a convenient shorthand for --log-level DEBUG
+    if args.debug:
+        config["log_level"] = "DEBUG"
+
+    # Configure logging as early as possible so all subsequent code can use it
+    setup_logging(
+        level=config["log_level"],
+        log_file=config["log_file"],
+        log_max_bytes=config["log_max_bytes"],
+        log_backup_count=config["log_backup_count"],
+    )
+
+    log.debug("Resolved config: %s", config)
+    log.debug("Parsed args: %s", args)
 
     return COMMANDS[args.command]["func"](args, config)
 

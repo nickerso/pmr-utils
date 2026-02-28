@@ -17,6 +17,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+# ==============================================================================
+# Module-level logger
+# (each module in your project should do this — they all feed into the
+#  root "pmr" logger that gets configured once in main())
+# ==============================================================================
+
+import logging
+log = logging.getLogger("pmr.cache")
 
 # ---------------------------------------------------------------------------
 # Exceptions
