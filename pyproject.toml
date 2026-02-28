@@ -1,0 +1,9 @@
+[project]
+name = "pmr-utils"
+version = "0.1.0"
+description = "Various PMR utilities that Andre has developed to help analyse the content of PMR. With a specific focus on CellML models."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "gitpython>=3.1.46",
+]
