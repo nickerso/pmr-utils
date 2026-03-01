@@ -1,0 +1,313 @@
+[
+  {
+    "href": "https://models.physiomeproject.org/workspace/adrian_chandler_hodgkin_1970",
+    "id": "adrian_chandler_hodgkin_1970",
+    "title": "Adrian, Chandler, Hodgkin, 1970",
+    "owner": "admin",
+    "description": null,
+    "storage": "git",
+    "latest-exposure": {
+      "href": "https://models.physiomeproject.org/exposure/d86b21d4e6bf68e94e20001a159fb9dd",
+      "title": "Adrian, Chandler, Hodgkin, 1970",
+      "commit_id": "cdf8973b740d11fc7a82763bde1675ff34f10666",
+      "links": [
+        {
+          "href": "https://models.physiomeproject.org/exposure/d86b21d4e6bf68e94e20001a159fb9dd/adrian_chandler_hodgkin_1970.cellml/view",
+          "prompt": "Voltage clamp experiments in striated muscle fibres",
+          "relationship": "bookmark",
+          "file_type": "https://models.physiomeproject.org/filetype/cellml",
+          "title": "Voltage clamp experiments in striated muscle fibres",
+          "commit_id": "cdf8973b740d11fc7a82763bde1675ff34f10666",
+          "links": [
+            {
+              "href": "https://models.physiomeproject.org/exposure/d86b21d4e6bf68e94e20001a159fb9dd/adrian_chandler_hodgkin_1970.cellml/docgen",
+              "prompt": "Documentation",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/d86b21d4e6bf68e94e20001a159fb9dd/adrian_chandler_hodgkin_1970.cellml/cmeta",
+              "prompt": "Model Metadata",
+              "relationship": "section",
+              "model_metadata": {
+                "model_author_org": "Bioengineering Institute, The University of Auckland",
+                "keywords": [
+                  [
+                    "#Adrian_Chandler_Hodgkin_Frog_Sartorius_1970",
+                    "skeletal muscle"
+                  ],
+                  [
+                    "#Adrian_Chandler_Hodgkin_Frog_Sartorius_1970",
+                    "myofilament mechanics"
+                  ],
+                  [
+                    "#Adrian_Chandler_Hodgkin_Frog_Sartorius_1970",
+                    "cardiac"
+                  ],
+                  [
+                    "#Adrian_Chandler_Hodgkin_Frog_Sartorius_1970",
+                    "electrophysiology"
+                  ]
+                ],
+                "citation_title": "Reconstruction of the action potential of frog sartorius muscle",
+                "citation_authors": [
+                  [
+                    "Adrian",
+                    "R",
+                    "H"
+                  ],
+                  [
+                    "Peachey",
+                    "L",
+                    "D"
+                  ]
+                ],
+                "title": null,
+                "citation_journal": "Journal of Physiology",
+                "model_author": "Martin Buist",
+                "citation_id": "urn:miriam:pubmed:4778131"
+              }
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/d86b21d4e6bf68e94e20001a159fb9dd/adrian_chandler_hodgkin_1970.cellml/cellml_math",
+              "prompt": "Mathematics",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/d86b21d4e6bf68e94e20001a159fb9dd/adrian_chandler_hodgkin_1970.cellml/cellml_codegen",
+              "prompt": "Generated Code",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/d86b21d4e6bf68e94e20001a159fb9dd/adrian_chandler_hodgkin_1970.cellml/license_citation",
+              "prompt": "Cite this model",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/d86b21d4e6bf68e94e20001a159fb9dd/adrian_chandler_hodgkin_1970.cellml/source_text",
+              "prompt": "Source View",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/d86b21d4e6bf68e94e20001a159fb9dd/adrian_chandler_hodgkin_1970.cellml/omex",
+              "prompt": "COMBINE Archive",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/d86b21d4e6bf68e94e20001a159fb9dd/adrian_chandler_hodgkin_1970.cellml/virtuoso_rdf",
+              "prompt": "Semantic Metadata",
+              "relationship": "section"
+            },
+            {
+              "href": "opencor://openFile/https://models.physiomeproject.org/workspace/adrian_chandler_hodgkin_1970/rawfile/cdf8973b740d11fc7a82763bde1675ff34f10666/adrian_chandler_hodgkin_1970.cellml",
+              "prompt": "Launch with OpenCOR",
+              "relationship": "section"
+            }
+          ]
+        },
+        {
+          "href": "https://models.physiomeproject.org/workspace/adrian_chandler_hodgkin_1970",
+          "prompt": "Workspace URL",
+          "relationship": "via"
+        }
+      ]
+    }
+  },
+  {
+    "href": "https://models.physiomeproject.org/workspace/hodgkin_huxley_1952",
+    "id": "hodgkin_huxley_1952",
+    "title": "Hodgkin, Huxley, 1952",
+    "owner": "admin",
+    "description": null,
+    "storage": "git",
+    "latest-exposure": {
+      "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016",
+      "title": "Hodgkin, Huxley, 1952",
+      "commit_id": "a49243bad2797b85ff753ed194435196a2ab1a45",
+      "links": [
+        {
+          "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952.cellml/view",
+          "prompt": "A quantitative description of membrane current and its application to conduction and excitation in nerve (Original Model + Stimulus)",
+          "relationship": "bookmark",
+          "file_type": "https://models.physiomeproject.org/filetype/cellml",
+          "title": "A quantitative description of membrane current and its application to conduction and excitation in nerve (Original Model + Stimulus)",
+          "commit_id": "a49243bad2797b85ff753ed194435196a2ab1a45",
+          "links": [
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952.cellml/docgen",
+              "prompt": "Documentation",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952.cellml/cmeta",
+              "prompt": "Model Metadata",
+              "relationship": "section",
+              "model_metadata": {
+                "model_author_org": "The Bioengineering Institute, The University of Auckland",
+                "keywords": [
+                  [
+                    "#hodgkin_huxley_squid_axon_1952",
+                    "electrophysiology"
+                  ],
+                  [
+                    "#hodgkin_huxley_squid_axon_1952",
+                    "giant axon"
+                  ],
+                  [
+                    "#hodgkin_huxley_squid_axon_1952",
+                    "Neuron"
+                  ]
+                ],
+                "citation_title": "A quantitative description of membrane current and its application to conductance and excitation in nerve",
+                "citation_authors": [
+                  [
+                    "Hodgkin",
+                    "A",
+                    "L"
+                  ],
+                  [
+                    "Huxley",
+                    "A",
+                    "F"
+                  ]
+                ],
+                "title": "A quantitative description of membrane current and its application to conduction and excitation in nerve (Original Model + Stimulus)",
+                "citation_journal": "Journal of Physiology",
+                "model_author": "Catherine Lloyd",
+                "citation_id": "urn:miriam:pubmed:12991237"
+              }
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952.cellml/cellml_math",
+              "prompt": "Mathematics",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952.cellml/cellml_codegen",
+              "prompt": "Generated Code",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952.cellml/license_citation",
+              "prompt": "Cite this model",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952.cellml/source_text",
+              "prompt": "Source View",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952.cellml/omex",
+              "prompt": "COMBINE Archive",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952.cellml/virtuoso_rdf",
+              "prompt": "Semantic Metadata",
+              "relationship": "section"
+            },
+            {
+              "href": "opencor://openFile/https://models.physiomeproject.org/workspace/hodgkin_huxley_1952/rawfile/a49243bad2797b85ff753ed194435196a2ab1a45/hodgkin_huxley_1952.cellml",
+              "prompt": "Launch with OpenCOR",
+              "relationship": "section"
+            }
+          ]
+        },
+        {
+          "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952_variant01.cellml/view",
+          "prompt": "A quantitative description of membrane current and its application to conduction and excitation in nerve (Original Model)",
+          "relationship": "bookmark",
+          "file_type": "https://models.physiomeproject.org/filetype/cellml",
+          "title": "A quantitative description of membrane current and its application to conduction and excitation in nerve (Original Model)",
+          "commit_id": "a49243bad2797b85ff753ed194435196a2ab1a45",
+          "links": [
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952_variant01.cellml/docgen",
+              "prompt": "Documentation",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952_variant01.cellml/cmeta",
+              "prompt": "Model Metadata",
+              "relationship": "section",
+              "model_metadata": {
+                "model_author_org": "The Bioengineering Institute, The University of Auckland",
+                "keywords": [
+                  [
+                    "#hodgkin_huxley_squid_axon_1952",
+                    "Neuron"
+                  ],
+                  [
+                    "#hodgkin_huxley_squid_axon_1952",
+                    "giant axon"
+                  ],
+                  [
+                    "#hodgkin_huxley_squid_axon_1952",
+                    "electrophysiology"
+                  ]
+                ],
+                "citation_title": "A quantitative description of membrane current and its application to conduction and excitation in nerve",
+                "citation_authors": [
+                  [
+                    "Hodgkin",
+                    "A",
+                    "L"
+                  ],
+                  [
+                    "Huxley",
+                    "A",
+                    "F"
+                  ]
+                ],
+                "title": "A quantitative description of membrane current and its application to conduction and excitation in nerve (Original Model)",
+                "citation_journal": "The Journal of Physiology",
+                "model_author": "Catherine Lloyd",
+                "citation_id": "urn:miriam:pubmed:12991237"
+              }
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952_variant01.cellml/cellml_math",
+              "prompt": "Mathematics",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952_variant01.cellml/cellml_codegen",
+              "prompt": "Generated Code",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952_variant01.cellml/license_citation",
+              "prompt": "Cite this model",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952_variant01.cellml/source_text",
+              "prompt": "Source View",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952_variant01.cellml/omex",
+              "prompt": "COMBINE Archive",
+              "relationship": "section"
+            },
+            {
+              "href": "https://models.physiomeproject.org/exposure/5d116522c3b43ccaeb87a1ed10139016/hodgkin_huxley_1952_variant01.cellml/virtuoso_rdf",
+              "prompt": "Semantic Metadata",
+              "relationship": "section"
+            },
+            {
+              "href": "opencor://openFile/https://models.physiomeproject.org/workspace/hodgkin_huxley_1952/rawfile/a49243bad2797b85ff753ed194435196a2ab1a45/hodgkin_huxley_1952_variant01.cellml",
+              "prompt": "Launch with OpenCOR",
+              "relationship": "section"
+            }
+          ]
+        },
+        {
+          "href": "https://models.physiomeproject.org/workspace/hodgkin_huxley_1952",
+          "prompt": "Workspace URL",
+          "relationship": "via"
+        }
+      ]
+    }
+  }
+]
