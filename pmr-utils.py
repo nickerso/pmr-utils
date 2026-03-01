@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any
 from pmr_cache import PMRCache, InstanceMismatchError, CacheNotInitialisedError
 from workspaces import cache_workspace_information
+from workspace_list_to_mx_fmt import export_to_omicsdi
 
 
 # ==============================================================================
@@ -212,6 +213,28 @@ def cmd_cache_workspace_information(args: argparse.Namespace, config: dict[str, 
                                        force_refresh=args.force_refresh)
 
 
+def cmd_omicsdi_export(args: argparse.Namespace, config: dict[str, Any]) -> int:
+    """Export OmicsDI metadata for cached workspaces."""
+
+    try:
+        cache = PMRCache(config["cache_dir"], config["pmr_instance"])
+    except InstanceMismatchError as e:
+        print(f"Error: instance mismatch - {e}")
+        return 1
+    except CacheNotInitialisedError as e:
+        print(f"Error: cache not initialised - {e}")
+        return 1
+    
+    mx_xml = export_to_omicsdi(cache)
+    if args.output:
+        with open(args.output, 'w', encoding="utf-8") as f:
+            f.write(mx_xml)
+    else:
+        print(mx_xml)
+
+    return 0
+
+
 def cmd_greet(args: argparse.Namespace, config: dict[str, Any]) -> int:
     """Say hello to someone, optionally loudly."""
     log.debug("cmd_greet called with args: %s", args)
@@ -285,6 +308,14 @@ def _args_cache_workspace_information(p: argparse.ArgumentParser):
     )
 
 
+def _args_omicsdi_export(p: argparse.ArgumentParser):
+    p.add_argument(
+        "--output",
+        metavar="FILE",
+        help="Path to output XML file (default: print to terminal)"
+    )
+
+
 def _args_greet(p: argparse.ArgumentParser):
     p.add_argument(
         "name",
@@ -347,6 +378,12 @@ COMMANDS = {
         "help": "Cache workspace information",
         "description": "Cache information for one or more workspaces.",
         "add_args": _args_cache_workspace_information,
+    },
+    "omicsdi-export": {
+        "func": cmd_omicsdi_export,
+        "help": "Export OmicsDI metadata",
+        "description": "Export metadata for cached workspaces in OmicsDI format.",
+        "add_args": _args_omicsdi_export,
     },
     "greet": {
         "func": cmd_greet,

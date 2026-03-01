@@ -171,10 +171,10 @@ class PMRCache:
         return Workspace.from_dict(entry) if entry else None
 
     def list_workspaces(self) -> list[Workspace]:
-        """Return all cached workspaces, sorted by name."""
+        """Return all cached workspaces, sorted by id."""
         data = self._load_workspaces()
         workspaces = [Workspace.from_dict(v) for v in data.values()]
-        return sorted(workspaces, key=lambda w: w.name.lower())
+        return sorted(workspaces, key=lambda w: w.id.lower())
 
     def upsert_workspace(self, workspace: Workspace) -> None:
         """Add or update a workspace entry in the cache."""
