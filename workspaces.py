@@ -6,6 +6,8 @@ from urllib.request import Request, urlopen
 from urllib.parse import urlparse
 from git import Repo
 from pmr_cache import PMRCache, Workspace
+from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 # ==============================================================================
 # Module-level logger
@@ -111,7 +113,7 @@ def list_link(link, follow=None):
     }
     if not ((rel in KNOWN_RELS) and (prompt in KNOWN_PROMPTS)):
         # maybe something we haven't seen before?
-        log.warning(f'Unknown link? Link({rel}): {href}; {prompt}')
+        log.debug(f'Unknown link? Link({rel}): {href}; {prompt}')
     if follow and rel == follow and href.startswith("https://models.physiomeproject.org/"):
         data = _request_json(href)
         link_info = data['collection']['items'][0]
@@ -199,15 +201,15 @@ def cache_workspace_information(cache: PMRCache, regex, workspace, all, force_re
     workspaces = get_workspace_list(cache.pmr_instance, regex, workspace, all)
     if len(workspaces) > 0:
         log.info(f'Found {len(workspaces)} workspace(s) to cache information for.')
-        for w in workspaces:
-            workspace = cache.get_workspace(w)
-            if (workspace and not force_refresh):
-                log.debug(f'Workspace {w} already cached and refresh not forced, skipping.')
-                continue
-            else:
-                log.debug(f'Workspace {w} not cached or refresh forced.')
-                workspace = create_workspace(w)
-                cache.upsert_workspace(workspace)
+        with logging_redirect_tqdm():
+            for w in tqdm(workspaces, desc="Caching workspaces"):
+                workspace = cache.get_workspace(w)
+                if (workspace and not force_refresh):
+                    log.debug(f'Workspace {w} already cached and refresh not forced, skipping.')
+                else:
+                    log.debug(f'Workspace {w} not cached or refresh forced.')
+                    workspace = create_workspace(w)
+                    cache.upsert_workspace(workspace)
     else:
         log.warning(f'No requested workspaces found, perhaps you are looking for a workspace that is not public?')
         return -1
