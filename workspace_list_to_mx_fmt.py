@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import json
 from pmr_cache import PMRCache, Workspace
 from tqdm import tqdm
@@ -75,16 +76,26 @@ def find_in_dict(data, target_key):
 
 
 
+@dataclass
+class OmicsDIEntry:
+    id: str = ''
+    name: str = ''
+    description: str = ''
+    url: str = ''
+    publications: str = ''
+
+    
 def export_to_omicsdi(cache: PMRCache) -> str:
     workspaces = cache.list_workspaces()
     log.info(f'There are {len(workspaces)} workspaces in the cache')
-    entries = []
+    entry_descriptions = {}
     with logging_redirect_tqdm():
         for w in tqdm(workspaces, desc="Processing workspaces for OmicsDI export"):
-            id = w.id
-            name = str(w.title or '').replace('&', '&amp;')
-            description = str(w.description or '').replace('&', '&amp;')
-            url = w.href
+            entry = OmicsDIEntry()
+            entry.id = w.id
+            entry.name = str(w.title or '').replace('&', '&amp;')
+            entry.description = str(w.description or '').replace('&', '&amp;')
+            entry.url = w.href
             citations = []
             if w.latest_exposure:
                 links = w.latest_exposure['links']
@@ -100,14 +111,40 @@ def export_to_omicsdi(cache: PMRCache) -> str:
                 else:
                     print(f'Non pubmed URN found: {c}')
                     pubs.append(c)
-            publications = ' ; '.join(pubs)
-            entries.append(entry_tmpl.format(
-                entry_id=id,
-                entry_url=url or '',
-                entry_name=name or id,
-                entry_description=description or f'Exposure with the id: {id}',
-                entry_publication=publications or ''
-            ))
+            entry.publications = ' ; '.join(pubs)
+            
+            if entry.id in entry_descriptions:
+                log.warning(f'Duplicate entry id found: {entry.id}.\nPrevious description: {entry_descriptions[entry.id]}.\nNew description: {entry}')
+                old_entry = entry_descriptions[entry.id]
+                # primarily interested in entries with associated publications
+                if old_entry.publications != "":
+                    if entry.publications == old_entry.publications:
+                        log.debug(f'Entries with id {entry.id} have the same publications, likely a duplicate entry so dropping.')
+                        continue
+                    elif entry.publications == "":
+                        log.debug(f'Entry with id {entry.id} has no publications, but a previous entry with the same id has publications, likely a duplicate entry so dropping.')
+                        continue
+                    else:
+                        log.warning(f'Entries with id {entry.id} have different publications, likely a conflict that should be resolved by the submitter. For now, we will keep both entries.')
+                        base, i = entry.id, 1
+                        while entry.id in entry_descriptions:
+                            entry.id = f'{base}.{i}'
+                            i += 1
+                elif entry.publications != "":
+                    log.debug(f'Entry with id {entry.id} has publications, but a previous entry with the same id has no publications, likely a duplicate entry so dropping the one without publications.')
+                    entry_descriptions[entry.id] = entry
+            else:
+                entry_descriptions[entry.id] = entry
+
+    entries = []
+    for entry in entry_descriptions.values():
+        entries.append(entry_tmpl.format(
+            entry_id=entry.id,
+            entry_url=entry.url or '',
+            entry_name=entry.name or entry.id,
+            entry_description=entry.description or f'Exposure with the id: {entry.id}',
+            entry_publication=entry.publications or ''
+        ))
 
     today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
     release_number = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
