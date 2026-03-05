@@ -4,7 +4,7 @@ from pmr_cache import PMRCache, Workspace
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 from datetime import datetime, timezone
-
+from utils import find_in_dict
 
 # ===========================================================================
 # Module-level logger
@@ -44,36 +44,6 @@ entry_tmpl = '''
         </additional_fields>    
     </entry>
 '''
-
-
-def find_in_dict(data, target_key):
-    """
-    Recursively search for a target key in a nested dictionary.
-
-    Args:
-        data (dict): The dictionary to search.
-        target_key (str): The key to find.
-
-    Returns:
-        Any: The value associated with the target key if found, else None.
-    """
-    if isinstance(data, dict):
-        for key, value in data.items():
-            if key == target_key:
-                return value
-            # Recursive call if the value is a dict or list
-            if isinstance(value, (dict, list)):
-                result = find_in_dict(value, target_key)
-                if result is not None:
-                    return result
-    elif isinstance(data, list):
-        for item in data:
-            if isinstance(item, (dict, list)):
-                result = find_in_dict(item, target_key)
-                if result is not None:
-                    return result
-    return None
-
 
 
 @dataclass

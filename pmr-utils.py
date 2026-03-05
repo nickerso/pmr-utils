@@ -29,6 +29,7 @@ from typing import Any
 from pmr_cache import PMRCache, InstanceMismatchError, CacheNotInitialisedError
 from workspaces import cache_workspace_information
 from workspace_list_to_mx_fmt import export_to_omicsdi
+from workspace_analysis import workspace_analysis
 
 
 # ==============================================================================
@@ -235,6 +236,23 @@ def cmd_omicsdi_export(args: argparse.Namespace, config: dict[str, Any]) -> int:
     return 0
 
 
+def cmd_workspace_analysis(args: argparse.Namespace, config: dict[str, Any]) -> int:
+    """Perform analysis on cached workspace information."""
+    log.debug("cmd_workspace_analysis called with args: %s", args)
+    log.info("Analyzing workspace information in cache: %s", config["cache_dir"])
+
+    try:
+        cache = PMRCache(config["cache_dir"], config["pmr_instance"])
+    except InstanceMismatchError as e:
+        print(f"Error: instance mismatch - {e}")
+        return 1
+    except CacheNotInitialisedError as e:
+        print(f"Error: cache not initialised - {e}")
+        return 1
+    
+    return workspace_analysis(cache, exposures_only=args.exposures_only, max_keywords=args.max_keywords, keyword_cloud=args.keyword_cloud)
+
+
 def cmd_greet(args: argparse.Namespace, config: dict[str, Any]) -> int:
     """Say hello to someone, optionally loudly."""
     log.debug("cmd_greet called with args: %s", args)
@@ -316,6 +334,28 @@ def _args_omicsdi_export(p: argparse.ArgumentParser):
     )
 
 
+def _args_workspace_analysis(p: argparse.ArgumentParser):
+    p.add_argument(
+        "--exposures-only",
+        action='store_true',
+        default=False,
+        help='Analyze only exposures (not all workspace information)'
+    )
+    p.add_argument(
+        "--keyword-cloud",
+        action='store_true',
+        default=False,
+        help='Generate a keyword cloud from the workspace exposure information'
+    )
+    p.add_argument(
+        "--max-keywords",
+        type=int,
+        default=20,
+        metavar="N",
+        help="Maximum number of keywords to display (default: 20)",
+    )
+
+
 def _args_greet(p: argparse.ArgumentParser):
     p.add_argument(
         "name",
@@ -384,6 +424,12 @@ COMMANDS = {
         "help": "Export OmicsDI metadata",
         "description": "Export metadata for cached workspaces in OmicsDI format.",
         "add_args": _args_omicsdi_export,
+    },
+    "analysis": {
+        "func": cmd_workspace_analysis,
+        "help": "Perform analysis on cached workspace information",
+        "description": "Analyze cached workspace information for insights.",
+        "add_args": _args_workspace_analysis,
     },
     "greet": {
         "func": cmd_greet,
