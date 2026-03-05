@@ -89,7 +89,7 @@ def export_to_omicsdi(cache: PMRCache) -> str:
     workspaces = cache.list_workspaces()
     log.info(f'There are {len(workspaces)} workspaces in the cache')
     entry_descriptions = {}
-    with logging_redirect_tqdm():
+    with logging_redirect_tqdm(loggers=[log]):
         for w in tqdm(workspaces, desc="Processing workspaces for OmicsDI export"):
             entry = OmicsDIEntry()
             entry.id = w.id
@@ -114,7 +114,8 @@ def export_to_omicsdi(cache: PMRCache) -> str:
             entry.publications = ' ; '.join(pubs)
             
             if entry.id in entry_descriptions:
-                log.warning(f'Duplicate entry id found: {entry.id}.\nPrevious description: {entry_descriptions[entry.id]}.\nNew description: {entry}')
+                log.warning(f'Duplicate entry id found: {entry.id}')
+                log.debug(f'Previous description: {entry_descriptions[entry.id]}.\nNew description: {entry}')
                 old_entry = entry_descriptions[entry.id]
                 # primarily interested in entries with associated publications
                 if old_entry.publications != "":
