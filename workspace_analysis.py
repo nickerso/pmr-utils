@@ -75,6 +75,7 @@ def workspace_analysis(cache: PMRCache, exposures_only: bool = False, max_keywor
     filetypes = []
     workspace_texts = []
     exposed_cellml_models = []
+    exposure_count = 0
     for w in workspaces:
         # build a combined text string for keyword extraction (if needed)
         if w.title and w.title != "":
@@ -83,6 +84,7 @@ def workspace_analysis(cache: PMRCache, exposures_only: bool = False, max_keywor
             workspace_texts.append(w.description)
 
         if w.latest_exposure:
+            exposure_count += 1
             links = w.latest_exposure['links']
             exposure_url = w.latest_exposure['href']
             for l in links:
@@ -111,6 +113,7 @@ def workspace_analysis(cache: PMRCache, exposures_only: bool = False, max_keywor
 
     # report on the information we found in the exposure metadata (this will be the same regardless of whether we're analyzing exposures only or all workspace information)
     print(f'Exposure metadata summary:')
+    print(f'- There are {exposure_count} exposures')
     citation_set = set(citation.lower() for citation in citations)
     print(f'- There are {len(citations)} citations in exposure metadata, consisting of {len(citation_set)} unique values.')
     
@@ -156,7 +159,7 @@ def workspace_analysis(cache: PMRCache, exposures_only: bool = False, max_keywor
     if check_cellml_models:
         with logging_redirect_tqdm(loggers=[log]):
             for model_url in tqdm(exposed_cellml_models, desc="Checking CellML models"):
-                log.debug(f'Checking CellML model at URL: {model_url}')
+                log.info(f'Checking CellML model at URL: {model_url}')
                 model, version = cellml.parse_remote_model(model_url, silent=True, strict_mode=False)
                 if model is None:
                     # can't do anything
@@ -176,18 +179,18 @@ def workspace_analysis(cache: PMRCache, exposures_only: bool = False, max_keywor
                 flat_model = model
                 if model.hasUnresolvedImports():
                     models_with_imports.append(model_url)
-                    importer = cellml.resolve_remote_imports(model, model_url, strict_mode=False, logger=log)
-                    if model.hasUnresolvedImports():
-                        log.debug(f'Model has unresolved imports after attempting to resolve remote imports')
-                        continue
-                    resolveable_models.append(model_url)
-                    if cellml.validate_model(model) > 0:
-                        log.warning('Validation issues found in model after resolving remote imports')
-                        continue
-                    resolved_and_valid_models.append(model_url)
-                    log.debug('Model was parsed, resolved, and validated without any issues.')
-                    # need a flattened model for analysing
-                    flat_model = cellml.flatten_model(model, importer)
+                    # importer = cellml.resolve_remote_imports(model, model_url, strict_mode=False, logger=log)
+                    # if model.hasUnresolvedImports():
+                    #     log.debug(f'Model has unresolved imports after attempting to resolve remote imports')
+                    #     continue
+                    # resolveable_models.append(model_url)
+                    # if cellml.validate_model(model) > 0:
+                    #     log.warning('Validation issues found in model after resolving remote imports')
+                    #     continue
+                    # resolved_and_valid_models.append(model_url)
+                    # log.debug('Model was parsed, resolved, and validated without any issues.')
+                    # # need a flattened model for analysing
+                    # flat_model = cellml.flatten_model(model, importer)
                 analysed_model, error_count = cellml.analyse_model(flat_model, silent=True)
                 if error_count != 0:
                     log.warning(f'Errors found when analysing the model: {model_url}')
