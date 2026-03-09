@@ -6,9 +6,9 @@ from nltk.collocations import TrigramAssocMeasures, TrigramCollocationFinder
 import string
 
 # Download required NLTK data (only needed once)
-nltk.download('stopwords')
-nltk.download('punkt')
-nltk.download('punkt_tab')
+nltk.download('stopwords', quiet=True)
+nltk.download('punkt', quiet=True)
+nltk.download('punkt_tab', quiet=True)
 
 # Common English stopwords (the, a, from, is, etc.)
 STOPWORDS = set(stopwords.words('english'))

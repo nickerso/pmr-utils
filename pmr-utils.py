@@ -250,7 +250,8 @@ def cmd_workspace_analysis(args: argparse.Namespace, config: dict[str, Any]) -> 
         print(f"Error: cache not initialised - {e}")
         return 1
     
-    return workspace_analysis(cache, exposures_only=args.exposures_only, max_keywords=args.max_keywords, keyword_cloud=args.keyword_cloud)
+    return workspace_analysis(cache, exposures_only=args.exposures_only, max_keywords=args.max_keywords, keyword_cloud=args.keyword_cloud,
+                              check_cellml_models=args.check_cellml_models)
 
 
 def cmd_greet(args: argparse.Namespace, config: dict[str, Any]) -> int:
@@ -354,6 +355,13 @@ def _args_workspace_analysis(p: argparse.ArgumentParser):
         metavar="N",
         help="Maximum number of keywords to display (default: 20)",
     )
+    p.add_argument(
+        "--check-cellml-models",
+        action='store_true',
+        default=False,
+        help="Check the validity and executability of CellML models in the exposures (this can be time-consuming, so it's optional)"
+    )
+    
 
 
 def _args_greet(p: argparse.ArgumentParser):

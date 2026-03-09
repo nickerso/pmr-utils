@@ -5,6 +5,10 @@ from pathlib import Path
 from pmr_cache import PMRCache
 from utils import find_in_dict, generate_keywords
 from collections import Counter
+import cellml
+from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
+
 
 # ==============================================================================
 # Module-level logger
@@ -39,7 +43,7 @@ def plot_top_keywords(keywords: list[str], n: int = 10, title: str = None, save_
         if save_path.exists():
             log.warning(f"Top keywords plot file already exists at {save_path}, it will be overwritten.")
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    plt.show()
+    # plt.show()
 
 
 def plot_keyword_cloud(keywords: list[str], title: str = None, save_path: Path = None):
@@ -54,11 +58,12 @@ def plot_keyword_cloud(keywords: list[str], title: str = None, save_path: Path =
         if save_path.exists():
             log.warning(f"Keyword cloud file already exists at {save_path}, it will be overwritten.")
         plt.savefig(save_path, dpi=300, bbox_inches='tight', transparent=True)
-    plt.show()
+    # plt.show()
 
     
 
-def workspace_analysis(cache: PMRCache, exposures_only: bool = False, max_keywords: int = 20, keyword_cloud: bool = False) -> int:
+def workspace_analysis(cache: PMRCache, exposures_only: bool = False, max_keywords: int = 20, keyword_cloud: bool = False,
+                       check_cellml_models: bool = False) -> int:
     workspaces = cache.list_workspaces()
     log.info(f'There are {len(workspaces)} workspaces in the cache')
     if exposures_only:
@@ -69,6 +74,7 @@ def workspace_analysis(cache: PMRCache, exposures_only: bool = False, max_keywor
     citations = []
     filetypes = []
     workspace_texts = []
+    exposed_cellml_models = []
     for w in workspaces:
         # build a combined text string for keyword extraction (if needed)
         if w.title and w.title != "":
@@ -78,6 +84,7 @@ def workspace_analysis(cache: PMRCache, exposures_only: bool = False, max_keywor
 
         if w.latest_exposure:
             links = w.latest_exposure['links']
+            exposure_url = w.latest_exposure['href']
             for l in links:
                 keyword_pairs = find_in_dict(l, 'keywords')
                 if keyword_pairs:
@@ -91,6 +98,16 @@ def workspace_analysis(cache: PMRCache, exposures_only: bool = False, max_keywor
                 file_type = find_in_dict(l, 'file_type')
                 if file_type:
                     filetypes.append(file_type)
+                    if check_cellml_models:
+                        if file_type == "https://models.physiomeproject.org/filetype/cellml":
+                            model_url = l.get('href')
+                            log.debug(f'Found CellML model in exposure metadata: {model_url}')
+                            commit_id = l.get('commit_id')
+                            workspace_url = w.href
+                            # construct the workspace URL with the commit ID to ensure we're looking at the correct version of the model
+                            raw_cellml_url = model_url.replace(exposure_url, f'{workspace_url}/rawfile/{commit_id}').strip('/view')
+                            log.debug(f'Constructed raw CellML URL: {raw_cellml_url}')
+                            exposed_cellml_models.append(raw_cellml_url)
 
     # report on the information we found in the exposure metadata (this will be the same regardless of whether we're analyzing exposures only or all workspace information)
     print(f'Exposure metadata summary:')
@@ -125,5 +142,70 @@ def workspace_analysis(cache: PMRCache, exposures_only: bool = False, max_keywor
             plot_keyword_cloud(workspace_keywords, title='Keyword Cloud from Workspace Text', save_path=cache.base_folder / "workspace_keyword_cloud.png")
             combined_keywords = semantic_keywords + workspace_keywords
             plot_keyword_cloud(combined_keywords, title='Combined Keyword Cloud from Workspace Text and Exposure Metadata', save_path=cache.base_folder / "combined_keyword_cloud.png")
+
+    # analyse the CellML models we found in the exposures (if requested)
+    parsed_models = []
+    cellml_10_models = []
+    cellml_11_models = []
+    cellml_20_models = []
+    valid_models = []
+    models_with_imports = []
+    resolveable_models = []
+    resolved_and_valid_models = []
+    executable_models = []
+    if check_cellml_models:
+        with logging_redirect_tqdm(loggers=[log]):
+            for model_url in tqdm(exposed_cellml_models, desc="Checking CellML models"):
+                log.debug(f'Checking CellML model at URL: {model_url}')
+                model, version = cellml.parse_remote_model(model_url, silent=True, strict_mode=False)
+                if model is None:
+                    # can't do anything
+                    log.debug(f'Model {model_url} is invalid')
+                    continue
+                log.debug(f'{model_url} was parsed and is CellML version {version}')
+                parsed_models.append(model_url)
+                if version == "1.0":
+                    cellml_10_models.append(model_url)
+                elif version == "1.1":
+                    cellml_11_models.append(model_url)
+                else:
+                    cellml_20_models.append(model_url)
+                if cellml.validate_model(model) > 0:
+                    continue
+                valid_models.append(model_url)
+                flat_model = model
+                if model.hasUnresolvedImports():
+                    models_with_imports.append(model_url)
+                    importer = cellml.resolve_remote_imports(model, model_url, strict_mode=False, logger=log)
+                    if model.hasUnresolvedImports():
+                        log.debug(f'Model has unresolved imports after attempting to resolve remote imports')
+                        continue
+                    resolveable_models.append(model_url)
+                    if cellml.validate_model(model) > 0:
+                        log.warning('Validation issues found in model after resolving remote imports')
+                        continue
+                    resolved_and_valid_models.append(model_url)
+                    log.debug('Model was parsed, resolved, and validated without any issues.')
+                    # need a flattened model for analysing
+                    flat_model = cellml.flatten_model(model, importer)
+                analysed_model, error_count = cellml.analyse_model(flat_model, silent=True)
+                if error_count != 0:
+                    log.warning(f'Errors found when analysing the model: {model_url}')
+                    continue
+                # if cellml.generate_code(analysed_model, print_code=False):
+                #     log.warning(f'Something went wrong trying to generate code for model: {model_url}')
+                #     continue
+                executable_models.append(model_url)
+        print(f'- There are {len(exposed_cellml_models)} CellML models exposed in the metadata of the exposures.')
+        print(f'-- {len(parsed_models)} are able to be parsed by libCellML')
+        print(f'-- {len(valid_models)} are valid CellML models')
+        print(f'-- {len(executable_models)} are able generate code for potential simulation')
+        print(f'-- CellML Version:')
+        print(f'-- -- {len(cellml_10_models)} CellML 1.0 models')
+        print(f'-- -- {len(cellml_11_models)} CellML 1.1 models')
+        print(f'-- -- {len(cellml_20_models)} CellML 2.0 models')
+        print(f'-- {len(models_with_imports)} are models that have imports')
+        print(f'-- -- {len(resolveable_models)} have imports which are resolvable')
+        print(f'-- -- {len(resolved_and_valid_models)} are valid after resolving the imports')
 
     return 0
