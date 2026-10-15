@@ -102,8 +102,6 @@ def get_workspace_list(instance, regex, workspace, all):
     return workspace_list
 
 
-
-
 def get_exposure_list(instance, regex, exposure, all):
     exposure_list = []
     if exposure:
@@ -127,7 +125,7 @@ def get_exposure_list(instance, regex, exposure, all):
     return exposure_list
 
 
-def list_link(link, follow=None):
+def list_link(link, pmr_instance=PMR_INSTANCES['models'], follow=None):
     href = link['href']
     prompt = link['prompt']
     rel = link['rel']
@@ -139,7 +137,7 @@ def list_link(link, follow=None):
     if not ((rel in KNOWN_RELS) and (prompt in KNOWN_PROMPTS)):
         # maybe something we haven't seen before?
         log.debug(f'Unknown link? Link({rel}): {href}; {prompt}')
-    if follow and rel == follow and href.startswith("https://models.physiomeproject.org/"):
+    if follow and rel == follow and href.startswith(pmr_instance):
         data = _request_json(href)
         link_info = data['collection']['items'][0]
         link_data = link_info['data']
@@ -149,7 +147,7 @@ def list_link(link, follow=None):
             link_links = data['collection']['links']
             link_desc['links'] = []
             for l in link_links:
-                link_desc['links'].append(list_link(l, follow))
+                link_desc['links'].append(list_link(l, pmr_instance=pmr_instance, follow='bookmark'))
     if rel == 'section':
         if prompt == 'Model Metadata':
             data = _request_json(href)
@@ -163,6 +161,8 @@ def list_link(link, follow=None):
 
 def list_exposure(exposure_url):
     log.debug(f'Exposure: {exposure_url}')
+    parsed_url = urlparse(exposure_url)
+    pmr_instance = f"{parsed_url.scheme}://{parsed_url.netloc}"
     exposure = {
         'href': exposure_url
     }
@@ -174,7 +174,7 @@ def list_exposure(exposure_url):
     exposure_links = data['collection']['links']
     exposure['links'] = []
     for l in exposure_links:
-        exposure['links'].append(list_link(l, follow='bookmark'))
+        exposure['links'].append(list_link(l, pmr_instance=pmr_instance, follow='bookmark'))
     return exposure
 
 
