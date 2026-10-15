@@ -5,7 +5,7 @@ import pathlib
 from urllib.request import Request, urlopen
 from urllib.parse import urlparse
 from git import Repo
-from pmr_cache import PMRCache, Workspace
+from pmr_cache import Exposure, PMRCache, Workspace
 from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
@@ -102,6 +102,31 @@ def get_workspace_list(instance, regex, workspace, all):
     return workspace_list
 
 
+
+
+def get_exposure_list(instance, regex, exposure, all):
+    exposure_list = []
+    if exposure:
+        # user has given a single exposure to use, check its for this instance of PMR
+        if not exposure.startswith(instance):
+            log.error(f'The requested exposure, {exposure}, is not from this instance of PMR ({instance}).')
+            return exposure_list
+        exposure_list.append(exposure)
+    elif regex or all:
+        # fetch exposures from the requested instance
+        exposure_root = instance + "/e"
+        data = _request_json(exposure_root)
+        collection_links = data['collection']['links']
+        entry_count = len(collection_links)
+        log.info(f"Total number of exposures retrieved: {entry_count}")
+        exposure_list = []
+        for entry in collection_links:
+            if (not regex) or re.match(regex, entry['href']):
+                exposure_list.append(entry['href'])
+        log.info(f"Retrieved {len(exposure_list)} exposure(s) from this PMR instance that match the regex: {regex}")
+    return exposure_list
+
+
 def list_link(link, follow=None):
     href = link['href']
     prompt = link['prompt']
@@ -183,6 +208,17 @@ def create_workspace(workspace_url) -> Workspace:
     )
 
 
+def create_exposure(exposure_url) -> Exposure:
+    log.debug(f"Exposure: {exposure_url}")
+    exposure_info = list_exposure(exposure_url)
+    
+    return Exposure(
+        href=exposure_info['href'],
+        title=exposure_info['title'],
+        links=exposure_info.get('links', []),
+    )
+
+
 def update_workspaces(workspaces, cache_root):
     for w in workspaces:
         path = pathlib.Path(urlparse(w).path)
@@ -215,6 +251,28 @@ def cache_workspace_information(cache: PMRCache, regex, workspace, all, force_re
         return -1
     
     return 0
+
+def cache_exposure_information(cache: PMRCache, regex, exposure, all, force_refresh) -> int:
+    log.debug(f'Cache exposure information using cache: {cache}')
+
+    exposures = get_exposure_list(cache.pmr_instance, regex, exposure, all)
+    if len(exposures) > 0:
+        log.info(f'Found {len(exposures)} exposure(s) to cache information for.')
+        with logging_redirect_tqdm():
+            for e in tqdm(exposures, desc="Caching exposures"):
+                exposure = cache.get_exposure(e)
+                if (exposure and not force_refresh):
+                    log.debug(f'Exposure {e} already cached and refresh not forced, skipping.')
+                else:
+                    log.debug(f'Exposure {e} not cached or refresh forced.')
+                    exposure = create_exposure(e)
+                    cache.upsert_exposure(exposure)
+    else:
+        log.warning(f'No requested exposures found, perhaps you are looking for an exposure that is not public?')
+        return -1
+    
+    return 0
+
 
 def check_cache(instance, root):
     print(f"Updating the local cache: {root}")

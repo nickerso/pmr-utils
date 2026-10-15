@@ -27,7 +27,7 @@ import tomllib  # Python 3.11+; use `pip install tomli` and `import tomli as tom
 from pathlib import Path
 from typing import Any
 from pmr_cache import PMRCache, InstanceMismatchError, CacheNotInitialisedError
-from workspaces import cache_workspace_information
+from workspaces import cache_workspace_information, cache_exposure_information
 from workspace_list_to_mx_fmt import export_to_omicsdi
 from workspace_analysis import workspace_analysis
 
@@ -214,6 +214,22 @@ def cmd_cache_workspace_information(args: argparse.Namespace, config: dict[str, 
                                        force_refresh=args.force_refresh)
 
 
+def cmd_cache_exposure_information(args: argparse.Namespace, config: dict[str, Any]) -> int:
+    """Populate the exposure cache information."""
+
+    try:
+        cache = PMRCache(config["cache_dir"], config["pmr_instance"])
+    except InstanceMismatchError as e:
+        print(f"Error: instance mismatch - {e}")
+        return 1
+    except CacheNotInitialisedError as e:
+        print(f"Error: cache not initialised - {e}")
+        return 1
+    
+    return cache_exposure_information(cache, regex=args.regex, exposure=args.exposure, all=args.all, 
+                                       force_refresh=args.force_refresh)
+
+
 def cmd_omicsdi_export(args: argparse.Namespace, config: dict[str, Any]) -> int:
     """Export OmicsDI metadata for cached workspaces."""
 
@@ -327,6 +343,30 @@ def _args_cache_workspace_information(p: argparse.ArgumentParser):
     )
 
 
+def _args_cache_exposure_information(p: argparse.ArgumentParser):
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument(
+        "--regex",
+        help='Specify a regex to determine matching exposures to cache information for'
+    )
+    group.add_argument(
+        "--exposure",
+        help='Specify a single exposure to cache information for, rather than searching PMR'
+    )
+    group.add_argument(
+        "--all", 
+        action='store_true', 
+        default=False,
+        help='Cache information for all available (public) exposures in PMR'
+    )
+    p.add_argument(
+        "--force-refresh",
+        action='store_true',
+        default=False,
+        help='Force refresh of cached information even if it already exists'
+    )
+
+
 def _args_omicsdi_export(p: argparse.ArgumentParser):
     p.add_argument(
         "--output",
@@ -426,6 +466,12 @@ COMMANDS = {
         "help": "Cache workspace information",
         "description": "Cache information for one or more workspaces.",
         "add_args": _args_cache_workspace_information,
+    },
+    "cache-exposure": {
+        "func": cmd_cache_exposure_information,
+        "help": "Cache exposure information",
+        "description": "Cache information for one or more exposures.",
+        "add_args": _args_cache_exposure_information,
     },
     "omicsdi-export": {
         "func": cmd_omicsdi_export,

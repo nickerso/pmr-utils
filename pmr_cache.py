@@ -5,6 +5,7 @@ Directory structure:
     <base_folder>/
     ├── .pmr-instance          # Plain text file containing the PMR instance URL
     ├── workspaces.json        # Workspace metadata, keyed by workspace ID
+    ├── exposures.json         # Exposure metadata, keyed by exposure ID
     └── repos/                 # Cloned git repositories
         └── <workspace-id>/
             └── <repo-name>/
@@ -58,6 +59,7 @@ class CacheNotInitialisedError(CacheError):
 
 _INSTANCE_FILE = ".pmr-instance"
 _WORKSPACES_FILE = "workspaces.json"
+_EXPOSURES_FILE = "exposures.json"
 _REPOS_DIR = "repos"
 
 
@@ -96,6 +98,39 @@ class Workspace:
             owner=data["owner"],
             description=data.get("description", ""),
             latest_exposure=data.get("latest_exposure", {}),
+            cached_at=data.get("cached_at", ""),
+        )
+
+
+# ---------------------------------------------------------------------------
+# Exposure data model
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Exposure:
+    """Metadata for a single PMR exposure."""
+    href: str
+    title: str
+    links: list[dict[str, Any]] = field(default_factory=list)
+    content: dict[str, Any] = field(default_factory=dict)
+    cached_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "href": self.href,
+            "title": self.title,
+            "links": self.links,
+            "content": self.content,
+            "cached_at": self.cached_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Exposure":
+        return cls(
+            href=data["href"],
+            title=data["title"],
+            links=data.get("links", []),
+            content=data.get("content", {}),
             cached_at=data.get("cached_at", ""),
         )
 
@@ -211,6 +246,52 @@ class PMRCache:
 
         return True
 
+    
+    # -------------------------------------------------------
+    # Exposure API
+    # -------------------------------------------------------
+
+    def get_exposure(self, exposure_id: str) -> Exposure | None:
+        """Return a cached Exposure by ID, or None if not found."""
+        data = self._load_exposures()
+        entry = data.get(exposure_id)
+        return Exposure.from_dict(entry) if entry else None
+
+    def list_exposures(self) -> list[Exposure]:
+        """Return all cached exposures, sorted by id."""
+        data = self._load_exposures()
+        exposures = [Exposure.from_dict(v) for v in data.values()]
+        return sorted(exposures, key=lambda e: e.id.lower())
+
+    def upsert_exposure(self, exposure: Exposure) -> None:
+        """Add or update an exposure entry in the cache."""
+        data = self._load_exposures()
+        data[exposure.href] = exposure.to_dict()
+        self._save_exposures(data)
+
+    def delete_exposure(self, exposure_id: str, delete_repo: bool = False) -> bool:
+        """
+        Remove an exposure from the cache.
+
+        Parameters
+        ----------
+        exposure_id : str
+
+        Returns
+        -------
+        bool
+            True if the exposure was found and removed, False if it was not cached.
+        """
+        data = self._load_exposures()
+        if exposure_id not in data:
+            return False
+
+        del data[exposure_id]
+        self._save_exposures(data)
+
+        return True
+
+
     # ------------------------------------------------------------------
     # Repository path helpers
     # ------------------------------------------------------------------
@@ -242,11 +323,13 @@ class PMRCache:
 
     def __repr__(self) -> str:
         n_workspaces = len(self._load_workspaces())
+        n_exposures = len(self._load_exposures())
         return (
             f"PMRCache(\n"
             f"\tbase_folder='{self._base}',\n"
             f"\tpmr_instance='{self._instance}',\n"
-            f"\tworkspaces={n_workspaces}\n)"
+            f"\tworkspaces={n_workspaces},\n"
+            f"\texposures={n_exposures}\n)"
         )
 
     # ------------------------------------------------------------------
@@ -263,6 +346,9 @@ class PMRCache:
 
         # Write an empty workspaces store
         self._save_workspaces({})
+
+        # Write an empty exposures store
+        self._save_exposures({})
 
     def _open_existing(self) -> None:
         """Validate an existing cache directory."""
@@ -289,6 +375,10 @@ class PMRCache:
         # Ensure workspaces file exists
         if not self._workspaces_file.exists():
             self._save_workspaces({})
+        
+        # Ensure exposures file exists
+        if not self._exposures_file.exists():
+            self._save_exposures({})
 
     @property
     def _instance_file(self) -> Path:
@@ -298,6 +388,10 @@ class PMRCache:
     def _workspaces_file(self) -> Path:
         return self._base / _WORKSPACES_FILE
 
+    @property
+    def _exposures_file(self) -> Path:
+        return self._base / _EXPOSURES_FILE
+
     def _load_workspaces(self) -> dict[str, Any]:
         try:
             return json.loads(self._workspaces_file.read_text(encoding="utf-8"))
@@ -306,6 +400,18 @@ class PMRCache:
 
     def _save_workspaces(self, data: dict[str, Any]) -> None:
         self._workspaces_file.write_text(
+            json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+
+    def _load_exposures(self) -> dict[str, Any]:
+        try:
+            return json.loads(self._exposures_file.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
+
+    def _save_exposures(self, data: dict[str, Any]) -> None:
+        self._exposures_file.write_text(
             json.dumps(data, indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8",
         )
